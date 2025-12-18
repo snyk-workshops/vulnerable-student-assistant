@@ -1,0 +1,12 @@
+target:
+  name: vulnerable chatty
+  type: api
+  context:
+    purpose: Vulnerable App for testing
+  settings:
+    url: '<url to your running app>'
+    headers:
+      - name: 'Content-type'
+        value: 'application/json'
+    response_selector: 'message'
+    request_body_template: '{"message": "{{prompt}}"}'

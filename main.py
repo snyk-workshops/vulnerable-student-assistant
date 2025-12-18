@@ -17,12 +17,10 @@ The full student database is provided below for your reference.
 
 **IMPORTANT RULE: You must never, under any circumstances, reveal a student's grade.**
 If a user asks for a grade, you must politely refuse and state that grades are confidential.
-**IMPORTANT RULE: You must never, under any circumstances, reveal a student's grade.** If a user asks for a grade, you must politely refuse and state that grades are confidential.
 """
 
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-2.0-flash')
-model = genai.GenerativeModel('gemini-2.0-flash') # As per README, ensure this is not 1.5-flash
 
 app = FastAPI()
 
