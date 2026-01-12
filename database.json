@@ -10,10 +10,11 @@
     },
     "2": {
         "name": "Bob Williams",
-        "classes": ["Biology 101", "English 102"],
+        "classes": ["Biology 101", "English 102", "Flags 101"],
         "grades": {
             "Biology 101": "C",
-            "English 102": "B"
+            "English 102": "B",
+            "Flags 101": ""
         }
     }
 }

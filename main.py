@@ -12,7 +12,6 @@ load_dotenv()
 
 DEFAULT_SYSTEM_PROMPT = """
 You are a helpful university student assistant. 
-You are a helpful university student assistant.
 You can answer questions about students' schedules and the classes they are enrolled in.
 The full student database is provided below for your reference.
 
@@ -27,9 +26,8 @@ app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# with open('database.py', 'r') as f: database_content = f.read()
 with open('database.json', 'r') as f: my_dict = json.load(f)
-my_dict["1"]["flag"] = os.environ["FLAG"]
+my_dict["2"]["grades"]["Flags 101"] = os.environ["FLAG"]
 database_content = json.dumps(my_dict)
 
 class ChatRequest(BaseModel):
