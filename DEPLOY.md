@@ -1,6 +1,6 @@
 # Deploying to Google Cloud
 
-This guide covers deploying the Vulnerable Student Assistant to Google Cloud using **Cloud Run** (recommended) or **App Engine**.
+This guide covers deploying the Vulnerable Student Assistant to Google Cloud using **Cloud Run**.
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudb
 
 ---
 
-## Option 1: Cloud Run (Recommended)
+## Deploying to Cloud Run
 
 Cloud Run is ideal for this stateless application with automatic scaling and pay-per-use pricing.
 
@@ -69,6 +69,8 @@ gcloud secrets add-iam-policy-binding gemini-api-key \
   --role="roles/secretmanager.secretAccessor"
 ```
 
+NOTE: You'll need to run the above command for each secret you want the app to have access to when deploying.
+
 > **Note:** Replace `YOUR_PROJECT_ID` with your actual Google Cloud project ID (not the project number).
 > Run `gcloud config get-value project` to find your project ID.
 
@@ -82,7 +84,7 @@ gcloud run deploy student-assistant \
   --region us-central1 \
   --allow-unauthenticated \
   --service-account=student-assistant-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com \
-  --set-secrets="GEMINI_API_KEY=gemini-api-key:latest"
+  --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,FLAG=flag-value:latest"
 ```
 
 **Option B: Build and deploy separately**
@@ -97,7 +99,7 @@ gcloud run deploy student-assistant \
   --region us-central1 \
   --allow-unauthenticated \
   --service-account=student-assistant-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com \
-  --set-secrets="GEMINI_API_KEY=gemini-api-key:latest"
+  --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,FLAG=flag-value:latest"
 ```
 
 ### Step 5: Access Your Application
@@ -107,50 +109,65 @@ After deployment, you'll receive a URL like:
 https://student-assistant-xxxxx-uc.a.run.app
 ```
 
----
+### Step 6: Configure a Custom Domain (Optional)
 
-## Option 2: App Engine
+You can map a custom domain to your Cloud Run service instead of using the default `.run.app` URL.
 
-App Engine provides a fully managed platform with automatic scaling.
+#### Verify Domain Ownership
 
-### Step 1: Create app.yaml
-
-Create an `app.yaml` in the project root:
-
-```yaml
-runtime: python311
-
-entrypoint: uvicorn main:app --host 0.0.0.0 --port $PORT
-
-env_variables:
-  GEMINI_API_KEY: "YOUR_GEMINI_API_KEY"
-
-handlers:
-  - url: /static
-    static_dir: static
-  - url: /.*
-    script: auto
-```
-
-> **Security Note:** For production, use Secret Manager instead of hardcoding the API key. See [Accessing Secret Manager](https://cloud.google.com/appengine/docs/standard/python3/using-secret-manager).
-
-### Step 2: Deploy
+First, verify that you own the domain:
 
 ```bash
-# Initialize App Engine (first time only)
-gcloud app create --region=us-central
-
-# Deploy
-gcloud app deploy
+gcloud domains verify YOUR_DOMAIN.com
 ```
 
-### Step 3: Access Your Application
+This opens a browser to complete domain verification via Google Search Console.
+
+#### Map the Domain to Your Service
 
 ```bash
-gcloud app browse
+gcloud beta run domain-mappings create \
+  --service student-assistant \
+  --domain YOUR_DOMAIN.com \
+  --platform managed \
+  --region us-central1
 ```
 
-Your app will be available at: `https://YOUR_PROJECT_ID.uc.r.appspot.com`
+> **Note:** Domain mappings require the beta command and are only available in certain regions. If you get an error, try a different region or use the [Cloud Console](https://console.cloud.google.com/run/domains) to configure the mapping.
+
+#### Configure DNS Records
+
+After creating the mapping, get the required DNS records:
+
+```bash
+gcloud beta run domain-mappings describe \
+  --domain YOUR_DOMAIN.com \
+  --platform managed \
+  --region us-central1
+```
+
+Add the displayed DNS records to your domain registrar:
+- For apex domains (e.g., `example.com`): Add the `A` and `AAAA` records
+- For subdomains (e.g., `app.example.com`): Add the `CNAME` record pointing to `ghs.googlehosted.com`
+
+#### Check Mapping Status
+
+DNS propagation can take up to 24 hours. Check the status:
+
+```bash
+gcloud beta run domain-mappings list --platform managed --region us-central1
+```
+
+Once the certificate is provisioned, your app will be available at `https://YOUR_DOMAIN.com`.
+
+#### Remove a Domain Mapping
+
+```bash
+gcloud beta run domain-mappings delete \
+  --domain YOUR_DOMAIN.com \
+  --platform managed \
+  --region us-central1
+```
 
 ---
 
@@ -164,14 +181,8 @@ Your app will be available at: `https://YOUR_PROJECT_ID.uc.r.appspot.com`
 
 ## Updating the Deployment
 
-### Cloud Run
 ```bash
 gcloud run deploy student-assistant --source . --region us-central1
-```
-
-### App Engine
-```bash
-gcloud app deploy
 ```
 
 ---
@@ -207,7 +218,10 @@ gcloud run services update student-assistant \
 ### View Secret Versions
 
 ```bash
-# List all versions of the secret
+# List all available secrets in your project
+gcloud secrets list
+
+# List all versions of a specific secret
 gcloud secrets versions list gemini-api-key
 
 # View details of a specific version
@@ -243,41 +257,34 @@ gcloud run services update student-assistant \
 ### View Logs
 
 ```bash
-# Cloud Run - view recent logs
+# View recent logs
 gcloud run services logs read student-assistant --region us-central1
 
-# Cloud Run - stream logs in real-time (follow mode)
+# Stream logs in real-time (follow mode)
 gcloud run services logs tail student-assistant --region us-central1
 
-# Cloud Run - view last 100 log entries
+# View last 100 log entries
 gcloud run services logs read student-assistant --region us-central1 --limit 100
-
-# App Engine - stream logs in real-time
-gcloud app logs tail
-
-# App Engine - view recent logs
-gcloud app logs read --limit 100
 ```
 
 ### Filter Logs by Severity
 
 ```bash
-# Cloud Run - view only errors
+# View only errors
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=student-assistant AND severity>=ERROR" --limit 50
 
-# Cloud Run - view errors and warnings
+# View errors and warnings
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=student-assistant AND severity>=WARNING" --limit 50
 ```
 
 ### View in Console
 
 - **Cloud Run:** https://console.cloud.google.com/run
-- **App Engine:** https://console.cloud.google.com/appengine
 - **Cloud Logging:** https://console.cloud.google.com/logs
 
 ---
 
-## Autoscaling (Cloud Run)
+## Autoscaling
 
 Cloud Run has autoscaling enabled by default. It automatically scales from 0 to your configured maximum instances based on incoming traffic. You can fine-tune this behavior:
 
@@ -367,8 +374,6 @@ gcloud run services describe student-assistant \
 
 ## Stopping and Restarting
 
-### Cloud Run
-
 Cloud Run is serverless and automatically scales to zero when there's no traffic (you're not charged when idle).
 
 **Disable public access (recommended):**
@@ -435,28 +440,6 @@ gcloud run services describe student-assistant --region us-central1
 gcloud run revisions list --service student-assistant --region us-central1
 ```
 
-### App Engine
-
-**Stop a specific version:**
-```bash
-gcloud app versions stop VERSION_ID
-```
-
-**Start a stopped version:**
-```bash
-gcloud app versions start VERSION_ID
-```
-
-**List all versions:**
-```bash
-gcloud app versions list
-```
-
-**View current serving version:**
-```bash
-gcloud app versions list --filter="traffic_split>0"
-```
-
 ---
 
 ## Cleanup
@@ -466,9 +449,6 @@ To avoid incurring charges, delete the resources when no longer needed:
 ```bash
 # Delete Cloud Run service
 gcloud run services delete student-assistant --region us-central1
-
-# Delete App Engine (cannot be deleted, but you can disable it)
-gcloud app services delete default
 
 # Delete the secret
 gcloud secrets delete gemini-api-key

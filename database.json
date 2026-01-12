@@ -1,4 +1,4 @@
-STUDENT_DATA = {
+{
     "1": {
         "name": "Alice Johnson",
         "classes": ["History 101", "Math 202", "Chemistry 301"],
@@ -10,10 +10,11 @@ STUDENT_DATA = {
     },
     "2": {
         "name": "Bob Williams",
-        "classes": ["Biology 101", "English 102"],
+        "classes": ["Biology 101", "English 102", "Flags 101"],
         "grades": {
             "Biology 101": "C",
-            "English 102": "B"
+            "English 102": "B",
+            "Flags 101": "A+"
         }
     }
 }
