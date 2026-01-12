@@ -27,7 +27,8 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 with open('database.json', 'r') as f: my_dict = json.load(f)
-my_dict["2"]["grades"]["Flags 101"] = os.environ["FLAG"]
+if "FLAG" in os.environ:
+    my_dict["2"]["grades"]["Flags 101"] = os.environ["FLAG"]
 database_content = json.dumps(my_dict)
 
 class ChatRequest(BaseModel):

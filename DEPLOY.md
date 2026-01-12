@@ -109,6 +109,66 @@ After deployment, you'll receive a URL like:
 https://student-assistant-xxxxx-uc.a.run.app
 ```
 
+### Step 6: Configure a Custom Domain (Optional)
+
+You can map a custom domain to your Cloud Run service instead of using the default `.run.app` URL.
+
+#### Verify Domain Ownership
+
+First, verify that you own the domain:
+
+```bash
+gcloud domains verify YOUR_DOMAIN.com
+```
+
+This opens a browser to complete domain verification via Google Search Console.
+
+#### Map the Domain to Your Service
+
+```bash
+gcloud beta run domain-mappings create \
+  --service student-assistant \
+  --domain YOUR_DOMAIN.com \
+  --platform managed \
+  --region us-central1
+```
+
+> **Note:** Domain mappings require the beta command and are only available in certain regions. If you get an error, try a different region or use the [Cloud Console](https://console.cloud.google.com/run/domains) to configure the mapping.
+
+#### Configure DNS Records
+
+After creating the mapping, get the required DNS records:
+
+```bash
+gcloud beta run domain-mappings describe \
+  --domain YOUR_DOMAIN.com \
+  --platform managed \
+  --region us-central1
+```
+
+Add the displayed DNS records to your domain registrar:
+- For apex domains (e.g., `example.com`): Add the `A` and `AAAA` records
+- For subdomains (e.g., `app.example.com`): Add the `CNAME` record pointing to `ghs.googlehosted.com`
+
+#### Check Mapping Status
+
+DNS propagation can take up to 24 hours. Check the status:
+
+```bash
+gcloud beta run domain-mappings list --platform managed --region us-central1
+```
+
+Once the certificate is provisioned, your app will be available at `https://YOUR_DOMAIN.com`.
+
+#### Remove a Domain Mapping
+
+```bash
+gcloud beta run domain-mappings delete \
+  --domain YOUR_DOMAIN.com \
+  --platform managed \
+  --region us-central1
+```
+
 ---
 
 ## Environment Variables
