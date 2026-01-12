@@ -1,7 +1,7 @@
 # Getting set up
 - To create an API key:
 - Go to this site: https://aistudio.google.com/prompts/new_chat
-- Click on “Get API Key”
+- Click on “Get API Key” in the lower left
 - Click on “+ Create API Key” in the top right of the page
 
 This will generate an API Key unique to you that allows Gemini to talk with your device
