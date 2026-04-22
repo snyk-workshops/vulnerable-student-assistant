@@ -1,3 +1,5 @@
 __pycache__
 redteam_config.yml
 mise.toml
+.env
+.vscode/settings.json
